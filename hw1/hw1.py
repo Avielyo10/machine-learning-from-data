@@ -3,11 +3,12 @@
 # ID2: 987654321
 #####################
 
-# imports 
+# imports
 import numpy as np
 import pandas as pd
 
-def preprocess(X,y):
+
+def preprocess(X, y):
     """
     Perform mean normalization on the features and true labels.
 
@@ -19,14 +20,13 @@ def preprocess(X,y):
     - X: The mean normalized inputs.
     - y: The mean normalized labels.
     """
-    ###########################################################################
-    # TODO: Implement the normalization function.                             #
-    ###########################################################################
-    pass
-    ###########################################################################
-    #                             END OF YOUR CODE                            #
-    ###########################################################################
+    X_mean = X.mean(axis=0)
+    X = (X - X_mean) / (X.max(axis=0) - X.min(axis=0))
+
+    y_mean = y.mean()
+    y = (y - y_mean) / (y.max() - y.min())
     return X, y
+
 
 def apply_bias_trick(X):
     """
@@ -39,19 +39,16 @@ def apply_bias_trick(X):
     - X: Input data with an additional column of ones in the
         zeroth position (m instances over n+1 features).
     """
-    ###########################################################################
-    # TODO: Implement the bias trick by adding a column of ones to the data.                             #
-    ###########################################################################
-    pass
-    ###########################################################################
-    #                             END OF YOUR CODE                            #
-    ###########################################################################
+    m = X.shape[0]
+    ones = np.ones(m)
+    X = np.column_stack((ones, X))
     return X
+
 
 def compute_cost(X, y, theta):
     """
     Computes the average squared difference between an observation's actual and
-    predicted values for linear regression.  
+    predicted values for linear regression.
 
     Input:
     - X: Input data (m instances over n features).
@@ -61,23 +58,22 @@ def compute_cost(X, y, theta):
     Returns:
     - J: the cost associated with the current set of parameters (single number).
     """
-    
-    J = 0  # We use J for the cost.
-    ###########################################################################
-    # TODO: Implement the MSE cost function.                                  #
-    ###########################################################################
-    pass
-    ###########################################################################
-    #                             END OF YOUR CODE                            #
-    ###########################################################################
+
+    m = len(y)
+    predictions = X.dot(theta)
+    errors = np.subtract(predictions, y)
+    sqrErrors = np.square(errors)
+    J = 1 / (2 * m) * np.sum(sqrErrors)
+
     return J
+
 
 def gradient_descent(X, y, theta, alpha, num_iters):
     """
-    Learn the parameters of the model using gradient descent using 
-    the training set. Gradient descent is an optimization algorithm 
-    used to minimize some (loss) function by iteratively moving in 
-    the direction of steepest descent as defined by the negative of 
+    Learn the parameters of the model using gradient descent using
+    the training set. Gradient descent is an optimization algorithm
+    used to minimize some (loss) function by iteratively moving in
+    the direction of steepest descent as defined by the negative of
     the gradient. We use gradient descent to update the parameters
     (weights) of our model.
 
@@ -92,17 +88,20 @@ def gradient_descent(X, y, theta, alpha, num_iters):
     - theta: The learned parameters of your model.
     - J_history: the loss value for every iteration.
     """
-    
-    theta = theta.copy() # optional: theta outside the function will not change
-    J_history = [] # Use a python list to save the cost value in every iteration
-    ###########################################################################
-    # TODO: Implement the gradient descent optimization algorithm.            #
-    ###########################################################################
-    pass
-    ###########################################################################
-    #                             END OF YOUR CODE                            #
-    ###########################################################################
+
+    theta = theta.copy()  # optional: theta outside the function will not change
+    m = len(y)
+    J_history = np.zeros(num_iters)
+
+    for iter in range(num_iters):
+        predictions = X.dot(theta)
+        errors = np.subtract(predictions, y)
+        sum_delta = (alpha / m) * X.transpose().dot(errors)
+        theta = theta - sum_delta
+        J_history[iter] = compute_cost(X, y, theta)
+
     return theta, J_history
+
 
 def compute_pinv(X, y):
     """
@@ -120,22 +119,16 @@ def compute_pinv(X, y):
     Returns:
     - pinv_theta: The optimal parameters of your model.
     """
-    
-    pinv_theta = []
-    ###########################################################################
-    # TODO: Implement the pseudoinverse algorithm.                            #
-    ###########################################################################
-    pass
-    ###########################################################################
-    #                             END OF YOUR CODE                            #
-    ###########################################################################
+
+    pinv_theta = np.linalg.inv(X.T.dot(X)).dot(X.T).dot(y)
     return pinv_theta
+
 
 def efficient_gradient_descent(X, y, theta, alpha, num_iters):
     """
-    Learn the parameters of your model using the training set, but stop 
-    the learning process once the improvement of the loss value is smaller 
-    than 1e-8. This function is very similar to the gradient descent 
+    Learn the parameters of your model using the training set, but stop
+    the learning process once the improvement of the loss value is smaller
+    than 1e-8. This function is very similar to the gradient descent
     function you already implemented.
 
     Input:
@@ -149,25 +142,28 @@ def efficient_gradient_descent(X, y, theta, alpha, num_iters):
     - theta: The learned parameters of your model.
     - J_history: the loss value for every iteration.
     """
-    
-    theta = theta.copy() # optional: theta outside the function will not change
-    J_history = [] # Use a python list to save the cost value in every iteration
-    ###########################################################################
-    # TODO: Implement the efficient gradient descent optimization algorithm.  #
-    ###########################################################################
-    pass
-    ###########################################################################
-    #                             END OF YOUR CODE                            #
-    ###########################################################################
-    return theta, J_history
+
+    theta = theta.copy()  # optional: theta outside the function will not change
+    m = len(y)
+    J_history = np.zeros(num_iters)
+    for iter in range(num_iters):
+        predictions = X.dot(theta)
+        errors = np.subtract(predictions, y)
+        sum_delta = (alpha / m) * X.transpose().dot(errors)
+        theta = theta - sum_delta
+        J_history[iter] = compute_cost(X, y, theta)
+        if iter > 0 and np.subtract(J_history[iter - 1], J_history[iter]) < 1e-8:
+            break
+    return theta, J_history[: iter + 1]
+
 
 def find_best_alpha(X_train, y_train, X_val, y_val, iterations):
     """
-    Iterate over the provided values of alpha and train a model using 
-    the training dataset. maintain a python dictionary with alpha as the 
+    Iterate over the provided values of alpha and train a model using
+    the training dataset. maintain a python dictionary with alpha as the
     key and the loss on the validation set as the value.
 
-    You should use the efficient version of gradient descent for this part. 
+    You should use the efficient version of gradient descent for this part.
 
     Input:
     - X_train, y_train, X_val, y_val: the training and validation data
@@ -176,27 +172,43 @@ def find_best_alpha(X_train, y_train, X_val, y_val, iterations):
     Returns:
     - alpha_dict: A python dictionary - {alpha_value : validation_loss}
     """
-    
-    alphas = [0.00001, 0.00003, 0.0001, 0.0003, 0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 1, 2, 3]
-    alpha_dict = {} # {alpha_value: validation_loss}
-    ###########################################################################
-    # TODO: Implement the function and find the best alpha value.             #
-    ###########################################################################
-    pass
-    ###########################################################################
-    #                             END OF YOUR CODE                            #
-    ###########################################################################
+
+    alphas = [
+        0.00001,
+        0.00003,
+        0.0001,
+        0.0003,
+        0.001,
+        0.003,
+        0.01,
+        0.03,
+        0.1,
+        0.3,
+        1,
+        2,
+        3,
+    ]
+    alpha_dict = {}  # {alpha_value: validation_loss}
+    np.random.seed(42)
+    random_theta = np.random.rand(X_train.shape[1])
+    for alpha in alphas:
+        theta, _ = efficient_gradient_descent(
+            X_train, y_train, random_theta, alpha, iterations
+        )
+        cost = compute_cost(X_val, y_val, theta)
+        alpha_dict[alpha] = cost
     return alpha_dict
+
 
 def forward_feature_selection(X_train, y_train, X_val, y_val, best_alpha, iterations):
     """
-    Forward feature selection is a greedy, iterative algorithm used to 
-    select the most relevant features for a predictive model. The objective 
-    of this algorithm is to improve the model's performance by identifying 
-    and using only the most relevant features, potentially reducing overfitting, 
+    Forward feature selection is a greedy, iterative algorithm used to
+    select the most relevant features for a predictive model. The objective
+    of this algorithm is to improve the model's performance by identifying
+    and using only the most relevant features, potentially reducing overfitting,
     improving accuracy, and reducing computational cost.
 
-    You should use the efficient version of gradient descent for this part. 
+    You should use the efficient version of gradient descent for this part.
 
     Input:
     - X_train, y_train, X_val, y_val: the input data without bias trick
@@ -207,14 +219,26 @@ def forward_feature_selection(X_train, y_train, X_val, y_val, best_alpha, iterat
     - selected_features: A list of selected top 5 feature indices
     """
     selected_features = []
-    #####c######################################################################
-    # TODO: Implement the function and find the best alpha value.             #
-    ###########################################################################
-    pass
-    ###########################################################################
-    #                             END OF YOUR CODE                            #
-    ###########################################################################
+    remaining_features = list(range(X_train.shape[1]))
+    while len(selected_features) < 5:
+        best_cost = np.inf
+        for feature in remaining_features:
+            current_features = selected_features + [feature]
+            X_train_subset = X_train[:, current_features]
+            X_val_subset = X_val[:, current_features]
+            np.random.seed(42)
+            random_theta = np.random.rand(X_train_subset.shape[1])
+            theta, _ = efficient_gradient_descent(
+                X_train_subset, y_train, random_theta, best_alpha, iterations
+            )
+            cost = compute_cost(X_val_subset, y_val, theta)
+            if cost < best_cost:
+                best_cost = cost
+                best_feature = feature
+        selected_features.append(best_feature)
+        remaining_features.remove(best_feature)
     return selected_features
+
 
 def create_square_features(df):
     """
@@ -227,13 +251,7 @@ def create_square_features(df):
     - df_poly: The input data with polynomial features added as a dataframe
                with appropriate feature names
     """
-
     df_poly = df.copy()
-    ###########################################################################
-    # TODO: Implement the function to add polynomial features                 #
-    ###########################################################################
-    pass
-    ###########################################################################
-    #                             END OF YOUR CODE                            #
-    ###########################################################################
+    for col in df_poly.columns:
+        df_poly[f"{col}^2"] = df_poly[col] ** 2
     return df_poly
