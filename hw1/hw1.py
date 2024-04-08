@@ -258,8 +258,10 @@ def create_square_features(df):
         for col2 in num_cols:
             if col1 == col2:
                 # Don't create duplicate features for the same column
-                df_poly[f"{col1}^2"] = df[col1] ** 2
+                s = df[col1] ** 2
+                df_poly = pd.concat([df_poly, s.rename(f"{col1}^2")], axis=1)
             elif col1 < col2:
                 # Only create one feature per pair of columns to avoid redundancy
-                df_poly[f"{col1}*{col2}"] = df[col1] * df[col2]
+                s = df[col1] * df[col2]
+                df_poly = pd.concat([df_poly, s.rename(f"{col1}*{col2}")], axis=1)
     return df_poly
