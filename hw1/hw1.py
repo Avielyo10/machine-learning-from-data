@@ -252,6 +252,14 @@ def create_square_features(df):
                with appropriate feature names
     """
     df_poly = df.copy()
-    for col in df_poly.columns:
-        df_poly[f"{col}^2"] = df_poly[col] ** 2
+    # Create square features for each numeric column
+    num_cols = df.select_dtypes(include=np.number).columns
+    for col1 in num_cols:
+        for col2 in num_cols:
+            if col1 == col2:
+                # Don't create duplicate features for the same column
+                df_poly[f"{col1}^2"] = df[col1] ** 2
+            elif col1 < col2:
+                # Only create one feature per pair of columns to avoid redundancy
+                df_poly[f"{col1}*{col2}"] = df[col1] * df[col2]
     return df_poly
