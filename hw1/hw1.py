@@ -224,8 +224,8 @@ def forward_feature_selection(X_train, y_train, X_val, y_val, best_alpha, iterat
         best_cost = np.inf
         for feature in remaining_features:
             current_features = selected_features + [feature]
-            X_train_subset = X_train[:, current_features]
-            X_val_subset = X_val[:, current_features]
+            X_train_subset = apply_bias_trick(X_train[:, current_features])
+            X_val_subset = apply_bias_trick(X_val[:, current_features])
             np.random.seed(42)
             random_theta = np.random.rand(X_train_subset.shape[1])
             theta, _ = efficient_gradient_descent(
