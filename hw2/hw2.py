@@ -323,7 +323,7 @@ def depth_pruning(X_train, X_validation):
     training = []
     validation = []
     for max_depth in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]:
-        tree = DecisionTree(X_train, calc_gini, max_depth=max_depth)
+        tree = DecisionTree(X_train, calc_entropy, max_depth=max_depth, gain_ratio=True)
         tree.build_tree()
         training.append(tree.calc_accuracy(X_train))
         validation.append(tree.calc_accuracy(X_validation))
