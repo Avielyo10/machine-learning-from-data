@@ -226,6 +226,7 @@ class DecisionNode:
                     depth=self.depth + 1,
                     chi=self.chi,
                     max_depth=self.max_depth,
+                    gain_ratio=self.gain_ratio,
                 )
                 self.add_child(child_node, val)
 
