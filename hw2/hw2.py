@@ -271,6 +271,7 @@ class DecisionTree:
         self.max_depth = max_depth  # the maximum allowed depth of the tree
         self.gain_ratio = gain_ratio  #
         self.root = None  # the root node of the tree
+        self.tree_depth = 0  # the depth of the tree
 
     def build_tree(self):
         """
@@ -294,6 +295,7 @@ class DecisionTree:
             node = queue.pop(0)
             node.split()
             node.calc_feature_importance(n_total)
+            self.tree_depth = max(self.tree_depth, node.depth) # Update tree depth
             queue.extend([child for child in node.children if not child.terminal])
         self.root = root
 
@@ -333,7 +335,12 @@ class DecisionTree:
         return success / dataset.shape[0]
 
     def depth(self):
-        return self.root.depth()
+        """
+        Calculate the depth of the tree
+        
+        Output: the depth of the tree
+        """
+        return self.tree_depth
 
 
 def depth_pruning(X_train, X_validation):
@@ -383,7 +390,7 @@ def chi_pruning(X_train, X_test):
     tree.build_tree()
     chi_training_acc.append(tree.calc_accuracy(X_train))
     chi_validation_acc.append(tree.calc_accuracy(X_test))
-    depth.append(count_nodes(tree.root))  # TODO - count_nodes == depth?
+    depth.append(tree.depth())
 
     for p_value in [0.5, 0.25, 0.1, 0.05, 0.0001]:
         tree = DecisionTree(
@@ -392,7 +399,7 @@ def chi_pruning(X_train, X_test):
         tree.build_tree()
         chi_training_acc.append(tree.calc_accuracy(X_train))
         chi_validation_acc.append(tree.calc_accuracy(X_test))
-        depth.append(count_nodes(tree.root))  # TODO - calc depth
+        depth.append(tree.depth())
 
     return chi_training_acc, chi_validation_acc, depth
 
