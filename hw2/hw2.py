@@ -217,7 +217,6 @@ class DecisionNode:
 
         # Create child nodes for each split
         self.feature = best_feature
-        self.calc_feature_importance(n_total_sample=len(self.data))
         for val, subset in best_splits.items():
             if len(subset) > 0:  # Only create a child if there are data points
                 child_node = DecisionNode(
@@ -260,10 +259,12 @@ class DecisionTree:
             gain_ratio=self.gain_ratio,
         )
         queue = [root]
+        n_total = len(self.data)
 
         while queue:
             node = queue.pop(0)
             node.split()
+            node.calc_feature_importance(n_total)
             queue.extend([child for child in node.children if not child.terminal])
         self.root = root
 
