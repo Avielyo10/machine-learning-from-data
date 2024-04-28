@@ -203,6 +203,7 @@ class DecisionNode:
         best_goodness = -np.inf
         best_feature = None
         best_splits = {}
+
         for feature in range(self.data.shape[1] - 1):  # Assume last column is the label
             goodness, splits = self.goodness_of_split(feature, self.gain_ratio)
             if goodness > best_goodness:
@@ -214,6 +215,34 @@ class DecisionNode:
         if best_goodness <= 0 or not best_splits:
             self.terminal = True
             return  # No improvement in impurity or no splits available
+
+        # Chi square pruning
+        if self.chi < 1:
+            # Chi square test
+            chi_square_val = 0
+            degree_of_freedom = (
+                1  # TODO - calc degree? # TODO(#attributes-1)(#classes-1)
+            )
+            # TODO - is the degree_of_freedom dynamic ? meaning - #attributes-1 -depth
+
+            labels = self.data[:, -1]
+            unique_labels, counts = np.unique(labels, return_counts=True)
+
+            # sum over selected feature values
+            for _, subset in best_splits.items():
+                sub_labels = subset[:, -1]
+
+                for idx, label in enumerate(unique_labels):
+                    expected = len(subset) * (counts[idx] / counts.sum())
+                    actual_sub_indices = np.where(sub_labels == label)[0]
+                    chi_square_val += (
+                        (len(actual_sub_indices) - expected) ** 2
+                    ) / expected
+
+            if chi_square_val <= chi_table[degree_of_freedom][self.chi]:
+                # Split is "random", pruning
+                self.terminal = True
+                return
 
         # Create child nodes for each split
         self.feature = best_feature
@@ -349,23 +378,21 @@ def chi_pruning(X_train, X_test):
     chi_validation_acc = []
     depth = []
 
-    # add no-pruning first
-    tree = DecisionTree(X_train, calc_entropy)
+    # add no-pruning first - p-value cut-off is 1
+    tree = DecisionTree(data=X_train, impurity_func=calc_entropy, gain_ratio=True)
     tree.build_tree()
     chi_training_acc.append(tree.calc_accuracy(X_train))
     chi_validation_acc.append(tree.calc_accuracy(X_test))
-    depth.append(count_nodes(tree.root))
+    depth.append(count_nodes(tree.root))  # TODO - count_nodes == depth?
 
-    degree_of_freedom = 1
-
-    for chi in [0.5, 0.25, 0.1, 0.05, 0.0001]:
+    for p_value in [0.5, 0.25, 0.1, 0.05, 0.0001]:
         tree = DecisionTree(
-            X_train, calc_entropy, chi=chi_table[degree_of_freedom][chi]
+            data=X_train, impurity_func=calc_entropy, gain_ratio=True, chi=p_value
         )
         tree.build_tree()
         chi_training_acc.append(tree.calc_accuracy(X_train))
         chi_validation_acc.append(tree.calc_accuracy(X_test))
-        depth.append(count_nodes(tree.root))
+        depth.append(count_nodes(tree.root))  # TODO - calc depth
 
     return chi_training_acc, chi_validation_acc, depth
 
