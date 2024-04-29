@@ -158,14 +158,15 @@ class DecisionNode:
         groups = {
             val: self.data[indices == idx] for idx, val in enumerate(unique_values)
         }
+        impurity_func = calc_entropy if self.gain_ratio else self.impurity_func
 
         # Calculate impurity before the split
-        impurity_before = self.impurity_func(self.data)
+        impurity_before = impurity_func(self.data)
 
         # Calculate weighted impurity after the split
         n_samples = len(self.data)
         weighted_impurity_after = sum(
-            (len(group) / n_samples) * self.impurity_func(group)
+            (len(group) / n_samples) * impurity_func(group)
             for group in groups.values()
         )
 
