@@ -219,26 +219,25 @@ class DecisionNode:
 
         # Chi square pruning
         if self.chi < 1:
-            # Chi square test
-            chi_square_val = 0
-
             labels = self.data[:, -1]
             unique_labels, counts = np.unique(labels, return_counts=True)
             degree_of_freedom = (len(best_splits.keys()) - 1) * (len(unique_labels) - 1)
+            
+            # Prepare a chi square array to accumulate the chi square value
+            chi_square_val = 0
 
-            # sum over selected feature values
-            for _, subset in best_splits.items():
+            # Vectorizing the chi square calculation
+            for subset in best_splits.values():
                 sub_labels = subset[:, -1]
+                # Get counts of each label in subset
+                label_counts = np.array([np.sum(sub_labels == label) for label in unique_labels])
+                # Calculate expected counts
+                expected_counts = len(subset) * (counts / counts.sum())
+                # Vectorized chi square calculation for this subset
+                chi_square_val += np.sum(((label_counts - expected_counts) ** 2) / expected_counts)
 
-                for idx, label in enumerate(unique_labels):
-                    expected = len(subset) * (counts[idx] / counts.sum())
-                    actual_sub_indices = np.where(sub_labels == label)[0]
-                    chi_square_val += (
-                        (len(actual_sub_indices) - expected) ** 2
-                    ) / expected
-
+            # Pruning condition check using chi_table
             if chi_square_val <= chi_table[degree_of_freedom][self.chi]:
-                # Split is "random", pruning
                 self.terminal = True
                 return
 
