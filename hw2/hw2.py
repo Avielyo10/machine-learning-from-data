@@ -131,7 +131,7 @@ class DecisionNode:
         # Calculate the sum of weighted impurities for each child node
         weighted_impurities_children = np.sum(
             [
-                (child.data.shape[0] / n_total_sample) * child.impurity_func(child.data)
+                (child.data.shape[0] / n_total_sample) * self.impurity_func(child.data)
                 for child in self.children
             ]
         )
@@ -141,7 +141,7 @@ class DecisionNode:
             weighted_impurity_current - weighted_impurities_children
         )
 
-    def goodness_of_split(self, feature, gain_ratio=False):
+    def goodness_of_split(self, feature):
         """
         Calculate the goodness of split of a dataset given a feature and impurity function.
 
@@ -172,7 +172,7 @@ class DecisionNode:
         # Goodness of Split
         goodness = impurity_before - weighted_impurity_after
 
-        if gain_ratio:
+        if self.gain_ratio:
             # Calculate split information
             split_info = -sum(
                 (len(group) / n_samples) * np.log2(len(group) / n_samples)
@@ -205,7 +205,7 @@ class DecisionNode:
         best_splits = {}
 
         for feature in range(self.data.shape[1] - 1):  # Assume last column is the label
-            goodness, splits = self.goodness_of_split(feature, self.gain_ratio)
+            goodness, splits = self.goodness_of_split(feature)
             if goodness > best_goodness:
                 best_goodness = goodness
                 best_feature = feature
@@ -220,13 +220,10 @@ class DecisionNode:
         if self.chi < 1:
             # Chi square test
             chi_square_val = 0
-            degree_of_freedom = (
-                1  # TODO - calc degree? # TODO(#attributes-1)(#classes-1)
-            )
-            # TODO - is the degree_of_freedom dynamic ? meaning - #attributes-1 -depth
 
             labels = self.data[:, -1]
             unique_labels, counts = np.unique(labels, return_counts=True)
+            degree_of_freedom = (len(best_splits.keys()) - 1) * (len(unique_labels) - 1)
 
             # sum over selected feature values
             for _, subset in best_splits.items():
@@ -295,7 +292,7 @@ class DecisionTree:
             node = queue.pop(0)
             node.split()
             node.calc_feature_importance(n_total)
-            self.tree_depth = max(self.tree_depth, node.depth) # Update tree depth
+            self.tree_depth = max(self.tree_depth, node.depth)  # Update tree depth
             queue.extend([child for child in node.children if not child.terminal])
         self.root = root
 
@@ -337,7 +334,7 @@ class DecisionTree:
     def depth(self):
         """
         Calculate the depth of the tree
-        
+
         Output: the depth of the tree
         """
         return self.tree_depth
