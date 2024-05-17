@@ -409,7 +409,7 @@ class MaxLikelihood():
 
         return pred
 
-# TODO - use?
+# TODO - use? - when feature value doesn't exists
 EPSILLON = 1e-6 # if a certain value only occurs in the test set, the probability for that value will be EPSILLON.
 
 class DiscreteNBClassDistribution():
@@ -438,7 +438,16 @@ class DiscreteNBClassDistribution():
         # Count for each feature (column) unique values
         self.features_map = {}
         for feature in range(self.sub_data.shape[1]):
+            # unique_values should be of the entire dataset (not class filtered rows)
+            # count should consider only class filtered rows
+            unique_values_global = np.unique(dataset[:, feature])
             unique_values, counts = np.unique(self.sub_data[:, feature], return_counts=True)
+
+            values_diff = np.setdiff1d(unique_values_global, unique_values)
+            values_diff_count = np.zeros(len(values_diff))
+            np.append(unique_values, values_diff)
+            np.append(counts, values_diff_count)
+
             self.features_map[feature] = {val: counts[idx] for idx, val in enumerate(unique_values)}
 
     
@@ -452,7 +461,11 @@ class DiscreteNBClassDistribution():
         return prior
     
     def get_laplace_likelihood(self, x_i, v_i):
-        feature_imap = self.features_map.get(x_i, {})     
+        feature_imap = self.features_map.get(x_i, {})
+
+        if v_i not in feature_imap:
+            # value of the feature does not appear in the train set
+            return EPSILLON
         
         # number of instances with the feature value
         n_ij = feature_imap.get(v_i, 0)
