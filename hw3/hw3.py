@@ -445,8 +445,8 @@ class DiscreteNBClassDistribution():
 
             values_diff = np.setdiff1d(unique_values_global, unique_values)
             values_diff_count = np.zeros(len(values_diff))
-            np.append(unique_values, values_diff)
-            np.append(counts, values_diff_count)
+            unique_values = np.append(unique_values, values_diff)
+            counts = np.append(counts, values_diff_count)
 
             self.features_map[feature] = {val: counts[idx] for idx, val in enumerate(unique_values)}
 
